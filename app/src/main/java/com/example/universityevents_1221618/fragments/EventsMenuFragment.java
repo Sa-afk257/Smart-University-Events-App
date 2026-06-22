@@ -9,6 +9,8 @@ import android.widget.AutoCompleteTextView;
 import android.widget.Button;
 import android.widget.EditText;
 import android.widget.TextView;
+import android.widget.Toast;
+
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.fragment.app.Fragment;
@@ -63,20 +65,29 @@ public class EventsMenuFragment extends Fragment {
     }
 
     private void loadEvents() {
-        String category = categoryAutoComplete.getText().toString();
+        String category = categoryAutoComplete.getText().toString().trim();
+
+        if (category.equalsIgnoreCase("Category") || category.equalsIgnoreCase("All Categories")) {
+            category = "";
+        }
+
         String location = locationEditText.getText().toString().trim();
 
         int minSeats = 0;
         try {
-            if (!seatsEditText.getText().toString().isEmpty()) {
-                minSeats = Integer.parseInt(seatsEditText.getText().toString());
+            if (!seatsEditText.getText().toString().trim().isEmpty()) {
+                minSeats = Integer.parseInt(seatsEditText.getText().toString().trim());
             }
         } catch (NumberFormatException e) {
             minSeats = 0;
         }
 
         String search = searchEditText.getText().toString().trim();
+
         List<Event> eventList = dbHelper.getEvents(search, category, location, minSeats, false);
+
+        Toast.makeText(getContext(), "Events count = " + eventList.size(), Toast.LENGTH_LONG).show();
+
         if (eventList.isEmpty()) {
             recyclerView.setVisibility(View.GONE);
             noEventsText.setVisibility(View.VISIBLE);

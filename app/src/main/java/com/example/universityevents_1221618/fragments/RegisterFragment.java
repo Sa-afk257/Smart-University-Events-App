@@ -93,6 +93,7 @@ public class RegisterFragment extends Fragment {
         lastNameLayout.setError(null);
         passwordLayout.setError(null);
         confirmPasswordLayout.setError(null);
+        phoneLayout.setError(null);
     }
 
     private void initializeViews(View view) {
@@ -131,7 +132,25 @@ public class RegisterFragment extends Fragment {
         boolean lname = isLastNameValid();
         boolean pass = isPasswordValid();
         boolean confirmPass = doPasswordsMatch();
-        return email && fname && lname && pass && confirmPass;
+        boolean phone = isPhoneValid();
+        return email && fname && lname && pass && confirmPass && phone;
+    }
+
+    private boolean isPhoneValid() {
+        String phone = phoneEditText.getText().toString().trim();
+
+        if (phone.isEmpty()) {
+            phoneLayout.setError("Phone number is required");
+            return false;
+        }
+
+        if (phone.length() < 7) {
+            phoneLayout.setError("Enter a valid phone number");
+            return false;
+        }
+
+        phoneLayout.setError(null);
+        return true;
     }
     private boolean isEmailValid() {
         String email = emailEditText.getText().toString().trim();

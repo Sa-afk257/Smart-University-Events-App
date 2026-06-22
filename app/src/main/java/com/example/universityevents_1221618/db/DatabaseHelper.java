@@ -196,20 +196,36 @@ public class DatabaseHelper extends SQLiteOpenHelper {
         db.beginTransaction();
 
         try {
-
             for (int i = 0; i < eventsArray.length(); i++) {
                 JSONObject event = eventsArray.getJSONObject(i);
 
                 ContentValues values = new ContentValues();
+
                 values.put(KEY_ID, event.getInt("id"));
                 values.put(KEY_TITLE, event.getString("title"));
                 values.put(KEY_DESCRIPTION, event.getString("description"));
-                values.put(KEY_CATEGORY, event.getString("category"));
-                values.put(KEY_DATE, event.getString("date"));
-                values.put(KEY_TIME, event.getString("time"));
+
+                // JSON uses "type", database uses category
+                values.put(KEY_CATEGORY, event.optString("type", "General"));
+
+                // JSON does not have date/time, so add default values
+                values.put(KEY_DATE, event.optString("date", "2026-06-10"));
+                values.put(KEY_TIME, event.optString("time", "10:00 AM"));
+
                 values.put(KEY_LOCATION, event.getString("location"));
-                values.put(KEY_SEATS, event.getInt("seats"));
-                values.put(KEY_IMAGE_URL, event.getString("image"));
+
+                // JSON has area like "80 seats", extract number
+                String area = event.optString("area", "0");
+                int seats = 0;
+                try {
+                    seats = Integer.parseInt(area.replaceAll("[^0-9]", ""));
+                } catch (Exception e) {
+                    seats = 0;
+                }
+                values.put(KEY_SEATS, seats);
+
+                // JSON uses image_url
+                values.put(KEY_IMAGE_URL, event.optString("image_url", ""));
 
                 values.put(KEY_IS_FEATURED, (i < 3) ? 1 : 0);
 
@@ -245,7 +261,12 @@ public class DatabaseHelper extends SQLiteOpenHelper {
             selectionArgs.add("%" + searchText + "%");
         }
 
-        if (categoryFilter != null && !categoryFilter.isEmpty() && !categoryFilter.equals("All")) {
+        if (categoryFilter != null
+                && !categoryFilter.isEmpty()
+                && !categoryFilter.equalsIgnoreCase("All")
+                && !categoryFilter.equalsIgnoreCase("Category")
+                && !categoryFilter.equalsIgnoreCase("All Categories")) {
+
             if (selection == null) selection = ""; else selection += " AND ";
             selection += KEY_CATEGORY + " = ?";
             selectionArgs.add(categoryFilter);
