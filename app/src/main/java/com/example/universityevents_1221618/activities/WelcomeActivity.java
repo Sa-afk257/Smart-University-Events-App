@@ -1,4 +1,4 @@
-package com.example.androidproj.activities;
+package com.example.universityevents_1221618.activities;
 
 import android.content.Intent;
 import android.os.Bundle;
@@ -11,10 +11,10 @@ import com.android.volley.Request;
 import com.android.volley.RequestQueue;
 import com.android.volley.toolbox.JsonObjectRequest;
 import com.android.volley.toolbox.Volley;
-import com.example.androidproj.R;
-import com.example.androidproj.db.DatabaseHelper;
-import com.example.androidproj.models.User;
-import com.example.androidproj.utils.SessionManager;
+import com.example.universityevents_1221618.R;
+import com.example.universityevents_1221618.db.DatabaseHelper;
+import com.example.universityevents_1221618.models.User;
+import com.example.universityevents_1221618.utils.SessionManager;
 import org.json.JSONArray;
 import org.json.JSONObject;
 
