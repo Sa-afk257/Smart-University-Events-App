@@ -9,6 +9,7 @@ import android.util.Pair;
 import com.example.universityevents_1221618.models.Event;
 import com.example.universityevents_1221618.models.Reservation;
 import com.example.universityevents_1221618.models.User;
+import com.example.universityevents_1221618.utils.PasswordUtils;
 import org.json.JSONArray;
 import org.json.JSONObject;
 import java.util.ArrayList;
@@ -18,7 +19,7 @@ import java.util.Map;
 
 public class DatabaseHelper extends SQLiteOpenHelper {
     private static final String DATABASE_NAME = "UniversityEvents.db";
-    private static final int DATABASE_VERSION = 2;
+    private static final int DATABASE_VERSION = 3;
 
     private static final String TABLE_USERS = "users";
     private static final String TABLE_EVENTS = "events";
@@ -34,8 +35,7 @@ public class DatabaseHelper extends SQLiteOpenHelper {
     private static final String KEY_LAST_NAME = "last_name";
     private static final String KEY_PASSWORD = "password";
     private static final String KEY_GENDER = "gender";
-    private static final String KEY_COUNTRY = "country";
-    private static final String KEY_CITY = "city";
+    private static final String KEY_MAJOR = "major";
     private static final String KEY_PHONE = "phone";
     private static final String KEY_PROFILE_PIC_URI = "profile_pic_uri";
     private static final String KEY_ROLE = "role";
@@ -51,8 +51,11 @@ public class DatabaseHelper extends SQLiteOpenHelper {
     private static final String KEY_IS_FEATURED = "is_featured";
 
     private static final String KEY_RESERVATION_DATE = "reservation_date";
+    private static final String KEY_RESERVATION_QUANTITY = "quantity";
+    private static final String KEY_RESERVATION_TYPE = "reservation_type";
+    private static final String KEY_RESERVATION_STATUS = "status";
 
-    private static final String CREATE_TABLE_USERS = "CREATE TABLE " + TABLE_USERS + "(" + KEY_ID + " INTEGER PRIMARY KEY AUTOINCREMENT," + KEY_EMAIL + " TEXT UNIQUE NOT NULL," + KEY_FIRST_NAME + " TEXT NOT NULL," + KEY_LAST_NAME + " TEXT NOT NULL," + KEY_PASSWORD + " TEXT NOT NULL," + KEY_GENDER + " TEXT," + KEY_COUNTRY + " TEXT," + KEY_CITY + " TEXT," + KEY_PHONE + " TEXT," + KEY_PROFILE_PIC_URI + " TEXT," + KEY_ROLE + " TEXT NOT NULL" + ")";
+    private static final String CREATE_TABLE_USERS = "CREATE TABLE " + TABLE_USERS + "(" + KEY_ID + " INTEGER PRIMARY KEY AUTOINCREMENT," + KEY_EMAIL + " TEXT UNIQUE NOT NULL," + KEY_FIRST_NAME + " TEXT NOT NULL," + KEY_LAST_NAME + " TEXT NOT NULL," + KEY_PASSWORD + " TEXT NOT NULL," + KEY_GENDER + " TEXT," + KEY_MAJOR + " TEXT," + KEY_PHONE + " TEXT," + KEY_PROFILE_PIC_URI + " TEXT," + KEY_ROLE + " TEXT NOT NULL" + ")";
     private static final String CREATE_TABLE_EVENTS =
             "CREATE TABLE " + TABLE_EVENTS + "(" +
                     KEY_ID + " INTEGER PRIMARY KEY," +
@@ -67,7 +70,18 @@ public class DatabaseHelper extends SQLiteOpenHelper {
                     KEY_IS_FEATURED + " INTEGER DEFAULT 0" +
                     ")";
     private static final String CREATE_TABLE_FAVORITES = "CREATE TABLE " + TABLE_FAVORITES + "(" + KEY_ID + " INTEGER PRIMARY KEY AUTOINCREMENT," + KEY_USER_ID + " INTEGER," + KEY_EVENT_ID + " INTEGER, FOREIGN KEY(" + KEY_USER_ID + ") REFERENCES " + TABLE_USERS + "(" + KEY_ID + "), FOREIGN KEY(" + KEY_EVENT_ID + ") REFERENCES " + TABLE_EVENTS + "(" + KEY_ID + ")" + ")";
-    private static final String CREATE_TABLE_RESERVATIONS = "CREATE TABLE " + TABLE_RESERVATIONS + "(" + KEY_ID + " INTEGER PRIMARY KEY AUTOINCREMENT," + KEY_USER_ID + " INTEGER," + KEY_EVENT_ID + " INTEGER," + KEY_RESERVATION_DATE + " TEXT, FOREIGN KEY(" + KEY_USER_ID + ") REFERENCES " + TABLE_USERS + "(" + KEY_ID + "), FOREIGN KEY(" + KEY_EVENT_ID + ") REFERENCES " + TABLE_EVENTS + "(" + KEY_ID + ")" + ")";
+    private static final String CREATE_TABLE_RESERVATIONS =
+            "CREATE TABLE " + TABLE_RESERVATIONS + "(" +
+                    KEY_ID + " INTEGER PRIMARY KEY AUTOINCREMENT," +
+                    KEY_USER_ID + " INTEGER," +
+                    KEY_EVENT_ID + " INTEGER," +
+                    KEY_RESERVATION_DATE + " TEXT," +
+                    KEY_RESERVATION_QUANTITY + " INTEGER," +
+                    KEY_RESERVATION_TYPE + " TEXT," +
+                    KEY_RESERVATION_STATUS + " TEXT," +
+                    "FOREIGN KEY(" + KEY_USER_ID + ") REFERENCES " + TABLE_USERS + "(" + KEY_ID + ")," +
+                    "FOREIGN KEY(" + KEY_EVENT_ID + ") REFERENCES " + TABLE_EVENTS + "(" + KEY_ID + ")" +
+                    ")";
 
     public DatabaseHelper(Context context) {
         super(context, DATABASE_NAME, null, DATABASE_VERSION);
@@ -98,8 +112,7 @@ public class DatabaseHelper extends SQLiteOpenHelper {
         values.put(KEY_LAST_NAME, user.getLastName());
         values.put(KEY_PASSWORD, user.getPassword());
         values.put(KEY_GENDER, user.getGender());
-        values.put(KEY_COUNTRY, user.getCountry());
-        values.put(KEY_CITY, user.getCity());
+        values.put(KEY_MAJOR, user.getMajor());
         values.put(KEY_PHONE, user.getPhone());
         values.put(KEY_ROLE, user.getRole());
         long result = db.insert(TABLE_USERS, null, values);
@@ -109,9 +122,20 @@ public class DatabaseHelper extends SQLiteOpenHelper {
 
     public User checkUser(String email, String password) {
         SQLiteDatabase db = this.getReadableDatabase();
-        Cursor cursor = db.query(TABLE_USERS, null, KEY_EMAIL + "=? AND " + KEY_PASSWORD + "=?", new String[]{email, password}, null, null, null);
+
+        String hashedPassword = PasswordUtils.hashPassword(password);
+
+        Cursor cursor = db.query(
+                TABLE_USERS,
+                null,
+                KEY_EMAIL + "=? AND " + KEY_PASSWORD + "=?",
+                new String[]{email, hashedPassword},
+                null,
+                null,
+                null
+        );
         if (cursor != null && cursor.moveToFirst()) {
-            User user = new User(cursor.getInt(cursor.getColumnIndexOrThrow(KEY_ID)), cursor.getString(cursor.getColumnIndexOrThrow(KEY_EMAIL)), cursor.getString(cursor.getColumnIndexOrThrow(KEY_FIRST_NAME)), cursor.getString(cursor.getColumnIndexOrThrow(KEY_LAST_NAME)), cursor.getString(cursor.getColumnIndexOrThrow(KEY_PASSWORD)), cursor.getString(cursor.getColumnIndexOrThrow(KEY_GENDER)), cursor.getString(cursor.getColumnIndexOrThrow(KEY_COUNTRY)), cursor.getString(cursor.getColumnIndexOrThrow(KEY_CITY)), cursor.getString(cursor.getColumnIndexOrThrow(KEY_PHONE)), cursor.getString(cursor.getColumnIndexOrThrow(KEY_PROFILE_PIC_URI)), cursor.getString(cursor.getColumnIndexOrThrow(KEY_ROLE)));
+            User user = new User(cursor.getInt(cursor.getColumnIndexOrThrow(KEY_ID)), cursor.getString(cursor.getColumnIndexOrThrow(KEY_EMAIL)), cursor.getString(cursor.getColumnIndexOrThrow(KEY_FIRST_NAME)), cursor.getString(cursor.getColumnIndexOrThrow(KEY_LAST_NAME)), cursor.getString(cursor.getColumnIndexOrThrow(KEY_PASSWORD)), cursor.getString(cursor.getColumnIndexOrThrow(KEY_GENDER)), cursor.getString(cursor.getColumnIndexOrThrow(KEY_MAJOR)), cursor.getString(cursor.getColumnIndexOrThrow(KEY_PHONE)), cursor.getString(cursor.getColumnIndexOrThrow(KEY_PROFILE_PIC_URI)), cursor.getString(cursor.getColumnIndexOrThrow(KEY_ROLE)));
             cursor.close();
             db.close();
             return user;
@@ -146,7 +170,7 @@ public class DatabaseHelper extends SQLiteOpenHelper {
         SQLiteDatabase db = this.getReadableDatabase();
         Cursor cursor = db.query(TABLE_USERS, null, KEY_ID + "=?", new String[]{String.valueOf(userId)}, null, null, null);
         if (cursor != null && cursor.moveToFirst()) {
-            User user = new User(cursor.getInt(cursor.getColumnIndexOrThrow(KEY_ID)), cursor.getString(cursor.getColumnIndexOrThrow(KEY_EMAIL)), cursor.getString(cursor.getColumnIndexOrThrow(KEY_FIRST_NAME)), cursor.getString(cursor.getColumnIndexOrThrow(KEY_LAST_NAME)), cursor.getString(cursor.getColumnIndexOrThrow(KEY_PASSWORD)), cursor.getString(cursor.getColumnIndexOrThrow(KEY_GENDER)), cursor.getString(cursor.getColumnIndexOrThrow(KEY_COUNTRY)), cursor.getString(cursor.getColumnIndexOrThrow(KEY_CITY)), cursor.getString(cursor.getColumnIndexOrThrow(KEY_PHONE)), cursor.getString(cursor.getColumnIndexOrThrow(KEY_PROFILE_PIC_URI)), cursor.getString(cursor.getColumnIndexOrThrow(KEY_ROLE)));
+            User user = new User(cursor.getInt(cursor.getColumnIndexOrThrow(KEY_ID)), cursor.getString(cursor.getColumnIndexOrThrow(KEY_EMAIL)), cursor.getString(cursor.getColumnIndexOrThrow(KEY_FIRST_NAME)), cursor.getString(cursor.getColumnIndexOrThrow(KEY_LAST_NAME)), cursor.getString(cursor.getColumnIndexOrThrow(KEY_PASSWORD)), cursor.getString(cursor.getColumnIndexOrThrow(KEY_GENDER)), cursor.getString(cursor.getColumnIndexOrThrow(KEY_MAJOR)), cursor.getString(cursor.getColumnIndexOrThrow(KEY_PHONE)), cursor.getString(cursor.getColumnIndexOrThrow(KEY_PROFILE_PIC_URI)), cursor.getString(cursor.getColumnIndexOrThrow(KEY_ROLE)));
             cursor.close();
             db.close();
             return user;
@@ -294,17 +318,22 @@ public class DatabaseHelper extends SQLiteOpenHelper {
         return EventList;
     }
 
-    public boolean addReservation(int userId, int EventId, String date) {
+    public boolean addReservation(int userId, int EventId, String date, int quantity, String reservationType) {
         SQLiteDatabase db = this.getWritableDatabase();
+
         ContentValues values = new ContentValues();
         values.put(KEY_USER_ID, userId);
         values.put(KEY_EVENT_ID, EventId);
         values.put(KEY_RESERVATION_DATE, date);
+        values.put(KEY_RESERVATION_QUANTITY, quantity);
+        values.put(KEY_RESERVATION_TYPE, reservationType);
+        values.put(KEY_RESERVATION_STATUS, "Confirmed");
+
         long result = db.insert(TABLE_RESERVATIONS, null, values);
         db.close();
+
         return result != -1;
     }
-
     public List<Reservation> getReservations(int userId) {
         List<Reservation> reservationList = new ArrayList<>();
         SQLiteDatabase db = this.getReadableDatabase();
@@ -323,7 +352,15 @@ public class DatabaseHelper extends SQLiteOpenHelper {
                         cursor.getInt(cursor.getColumnIndexOrThrow(KEY_SEATS)),
                         cursor.getString(cursor.getColumnIndexOrThrow(KEY_IMAGE_URL))
                 );
-                Reservation reservation = new Reservation(cursor.getInt(cursor.getColumnIndexOrThrow("reservation_id")), userId, event, cursor.getString(cursor.getColumnIndexOrThrow(KEY_RESERVATION_DATE)));
+                Reservation reservation = new Reservation(
+                        cursor.getInt(cursor.getColumnIndexOrThrow("reservation_id")),
+                        userId,
+                        event,
+                        cursor.getString(cursor.getColumnIndexOrThrow(KEY_RESERVATION_DATE)),
+                        cursor.getInt(cursor.getColumnIndexOrThrow(KEY_RESERVATION_QUANTITY)),
+                        cursor.getString(cursor.getColumnIndexOrThrow(KEY_RESERVATION_TYPE)),
+                        cursor.getString(cursor.getColumnIndexOrThrow(KEY_RESERVATION_STATUS))
+                );
                 reservationList.add(reservation);
             } while (cursor.moveToNext());
         }
@@ -347,7 +384,7 @@ public class DatabaseHelper extends SQLiteOpenHelper {
         Cursor cursor = db.query(TABLE_USERS, null, KEY_ROLE + " = ?", new String[]{"USER"}, null, null, KEY_FIRST_NAME);
         if (cursor.moveToFirst()) {
             do {
-                userList.add(new User(cursor.getInt(cursor.getColumnIndexOrThrow(KEY_ID)), cursor.getString(cursor.getColumnIndexOrThrow(KEY_EMAIL)), cursor.getString(cursor.getColumnIndexOrThrow(KEY_FIRST_NAME)), cursor.getString(cursor.getColumnIndexOrThrow(KEY_LAST_NAME)), cursor.getString(cursor.getColumnIndexOrThrow(KEY_PASSWORD)), cursor.getString(cursor.getColumnIndexOrThrow(KEY_GENDER)), cursor.getString(cursor.getColumnIndexOrThrow(KEY_COUNTRY)), cursor.getString(cursor.getColumnIndexOrThrow(KEY_CITY)), cursor.getString(cursor.getColumnIndexOrThrow(KEY_PHONE)), cursor.getString(cursor.getColumnIndexOrThrow(KEY_PROFILE_PIC_URI)), cursor.getString(cursor.getColumnIndexOrThrow(KEY_ROLE))));
+                userList.add(new User(cursor.getInt(cursor.getColumnIndexOrThrow(KEY_ID)), cursor.getString(cursor.getColumnIndexOrThrow(KEY_EMAIL)), cursor.getString(cursor.getColumnIndexOrThrow(KEY_FIRST_NAME)), cursor.getString(cursor.getColumnIndexOrThrow(KEY_LAST_NAME)), cursor.getString(cursor.getColumnIndexOrThrow(KEY_PASSWORD)), cursor.getString(cursor.getColumnIndexOrThrow(KEY_GENDER)), cursor.getString(cursor.getColumnIndexOrThrow(KEY_MAJOR)), cursor.getString(cursor.getColumnIndexOrThrow(KEY_PHONE)), cursor.getString(cursor.getColumnIndexOrThrow(KEY_PROFILE_PIC_URI)), cursor.getString(cursor.getColumnIndexOrThrow(KEY_ROLE))));
             } while (cursor.moveToNext());
         }
         cursor.close();
@@ -365,10 +402,10 @@ public class DatabaseHelper extends SQLiteOpenHelper {
         return (int) db.compileStatement("SELECT COUNT(*) FROM " + TABLE_RESERVATIONS).simpleQueryForLong();
     }
 
-    public Map<String, Integer> getCountryReservationCounts() {
+    public Map<String, Integer> getmajorReservationCounts() {
         Map<String, Integer> counts = new HashMap<>();
         SQLiteDatabase db = this.getReadableDatabase();
-        String query = "SELECT u." + KEY_COUNTRY + ", COUNT(r." + KEY_ID + ") as count FROM " + TABLE_USERS + " u JOIN " + TABLE_RESERVATIONS + " r ON u." + KEY_ID + " = r." + KEY_USER_ID + " GROUP BY u." + KEY_COUNTRY;
+        String query = "SELECT u." + KEY_MAJOR + ", COUNT(r." + KEY_ID + ") as count FROM " + TABLE_USERS + " u JOIN " + TABLE_RESERVATIONS + " r ON u." + KEY_ID + " = r." + KEY_USER_ID + " GROUP BY u." + KEY_MAJOR;
         Cursor cursor = db.rawQuery(query, null);
         if (cursor.moveToFirst()) {
             do {
@@ -430,8 +467,7 @@ public class DatabaseHelper extends SQLiteOpenHelper {
                         cursor.getString(cursor.getColumnIndexOrThrow(KEY_LAST_NAME)),
                         cursor.getString(cursor.getColumnIndexOrThrow(KEY_PASSWORD)),
                         cursor.getString(cursor.getColumnIndexOrThrow(KEY_GENDER)),
-                        cursor.getString(cursor.getColumnIndexOrThrow(KEY_COUNTRY)),
-                        cursor.getString(cursor.getColumnIndexOrThrow(KEY_CITY)),
+                        cursor.getString(cursor.getColumnIndexOrThrow(KEY_MAJOR)),
                         cursor.getString(cursor.getColumnIndexOrThrow(KEY_PHONE)),
                         cursor.getString(cursor.getColumnIndexOrThrow(KEY_PROFILE_PIC_URI)),
                         cursor.getString(cursor.getColumnIndexOrThrow(KEY_ROLE))
@@ -451,7 +487,10 @@ public class DatabaseHelper extends SQLiteOpenHelper {
                         cursor.getInt(cursor.getColumnIndexOrThrow("reservation_id_col")),
                         user.getId(),
                         event,
-                        cursor.getString(cursor.getColumnIndexOrThrow(KEY_RESERVATION_DATE))
+                        cursor.getString(cursor.getColumnIndexOrThrow(KEY_RESERVATION_DATE)),
+                        cursor.getInt(cursor.getColumnIndexOrThrow(KEY_RESERVATION_QUANTITY)),
+                        cursor.getString(cursor.getColumnIndexOrThrow(KEY_RESERVATION_TYPE)),
+                        cursor.getString(cursor.getColumnIndexOrThrow(KEY_RESERVATION_STATUS))
                 );
                 list.add(new Pair<>(reservation, user));
             } while (cursor.moveToNext());

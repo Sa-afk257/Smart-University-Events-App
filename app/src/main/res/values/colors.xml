@@ -13,4 +13,9 @@
 
     <color name="black">#212121</color>
 
+    <color name="light_gray">#EEEEEE</color>
+    <color name="dark_gray">#1F6F5F</color>
+    <color name="almost_black">#212121</color>
+    <color name="light_outline">#6FCF97</color>
+
 </resources>

@@ -17,6 +17,7 @@ import com.example.universityevents_1221618.R;
 import com.example.universityevents_1221618.activities.AuthActivity;
 import com.example.universityevents_1221618.db.DatabaseHelper;
 import com.example.universityevents_1221618.models.User;
+import com.example.universityevents_1221618.utils.PasswordUtils;
 import com.google.android.material.textfield.TextInputEditText;
 import com.google.android.material.textfield.TextInputLayout;
 import java.util.regex.Pattern;
@@ -26,7 +27,7 @@ public class RegisterFragment extends Fragment {
     private static final Pattern PASSWORD_PATTERN = Pattern.compile("^" + "(?=.*[0-9])" + "(?=.*[a-zA-Z])" + ".{6,}" + "$");
     private TextInputLayout emailLayout, firstNameLayout, lastNameLayout, passwordLayout, confirmPasswordLayout, phoneLayout;
     private TextInputEditText emailEditText, firstNameEditText, lastNameEditText, passwordEditText, confirmPasswordEditText, phoneEditText;
-    private Spinner genderSpinner, countrySpinner, citySpinner;
+    private Spinner genderSpinner, majorSpinner;
     private Button registerButton;
     private DatabaseHelper dbHelper;
 
@@ -37,7 +38,6 @@ public class RegisterFragment extends Fragment {
         dbHelper = new DatabaseHelper(getContext());
         initializeViews(view);
         setupSpinners();
-        setupCountrySelectionListener();
         registerButton.setOnClickListener(v -> registerUser());
         return view;
     }
@@ -57,12 +57,16 @@ public class RegisterFragment extends Fragment {
         user.setEmail(email);
         user.setFirstName(firstNameEditText.getText().toString().trim());
         user.setLastName(lastNameEditText.getText().toString().trim());
-        user.setPassword(passwordEditText.getText().toString().trim());
+
+        String hashedPassword = PasswordUtils.hashPassword(passwordEditText.getText().toString().trim());
+        user.setPassword(hashedPassword);
+
         user.setGender(genderSpinner.getSelectedItem().toString());
-        user.setCountry(countrySpinner.getSelectedItem().toString());
-        user.setCity(citySpinner.getSelectedItem().toString());
+        user.setMajor(majorSpinner.getSelectedItem().toString());
         user.setPhone(phoneEditText.getText().toString().trim());
         user.setRole("USER");
+
+
 
         if (dbHelper.addUser(user)) {
             Toast.makeText(getContext(), "Registration successful! Please login.", Toast.LENGTH_LONG).show();
@@ -83,7 +87,7 @@ public class RegisterFragment extends Fragment {
         confirmPasswordEditText.setText("");
         phoneEditText.setText("");
         genderSpinner.setSelection(0);
-        countrySpinner.setSelection(0);
+        majorSpinner.setSelection(0);
         emailLayout.setError(null);
         firstNameLayout.setError(null);
         lastNameLayout.setError(null);
@@ -107,8 +111,7 @@ public class RegisterFragment extends Fragment {
         phoneEditText = view.findViewById(R.id.phone);
 
         genderSpinner = view.findViewById(R.id.gender_spinner);
-        countrySpinner = view.findViewById(R.id.country_spinner);
-        citySpinner = view.findViewById(R.id.city_spinner);
+        majorSpinner = view.findViewById(R.id.major_spinner);
         registerButton = view.findViewById(R.id.register_button);
     }
 
@@ -117,31 +120,9 @@ public class RegisterFragment extends Fragment {
         genderAdapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
         genderSpinner.setAdapter(genderAdapter);
 
-        ArrayAdapter<CharSequence> countryAdapter = ArrayAdapter.createFromResource(requireContext(), R.array.countries_array, android.R.layout.simple_spinner_item);
-        countryAdapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
-        countrySpinner.setAdapter(countryAdapter);
-    }
-
-    private void setupCountrySelectionListener() {
-        countrySpinner.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
-            @Override
-            public void onItemSelected(AdapterView<?> parent, View view, int position, long id) {
-                updateCitySpinner(parent.getItemAtPosition(position).toString());
-            }
-            @Override public void onNothingSelected(AdapterView<?> parent) { }
-        });
-    }
-
-    private void updateCitySpinner(String country) {
-        int citiesArrayId;
-        if (country.equals("Palestine")) citiesArrayId = R.array.palestine_cities_array;
-        else if (country.equals("Jordan")) citiesArrayId = R.array.jordan_cities_array;
-        else if (country.equals("Syria")) citiesArrayId = R.array.syria_cities_array;
-        else citiesArrayId = R.array.empty_array;
-
-        ArrayAdapter<CharSequence> cityAdapter = ArrayAdapter.createFromResource(requireContext(), citiesArrayId, android.R.layout.simple_spinner_item);
-        cityAdapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
-        citySpinner.setAdapter(cityAdapter);
+        ArrayAdapter<CharSequence> majorAdapter = ArrayAdapter.createFromResource(requireContext(), R.array.majors_array, android.R.layout.simple_spinner_item);
+        majorAdapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
+        majorSpinner.setAdapter(majorAdapter);
     }
 
     private boolean validateAllInputs() {

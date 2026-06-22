@@ -8,7 +8,7 @@ android {
 
     defaultConfig {
         applicationId = "com.example.universityevents_1221618"
-        minSdk = 26
+        minSdk = 28
         targetSdk = 35
         versionCode = 1
         versionName = "1.0"
@@ -41,7 +41,6 @@ dependencies {
     implementation(libs.glide)
     annotationProcessor(libs.glideCompiler)
     implementation(libs.circleimageview)
-    //implementation(libs.mpandroidchart)
 
     testImplementation(libs.junit)
     androidTestImplementation(libs.ext.junit)

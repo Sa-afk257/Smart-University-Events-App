@@ -16,7 +16,14 @@ import com.example.universityevents_1221618.db.DatabaseHelper;
 import com.example.universityevents_1221618.models.User;
 import com.example.universityevents_1221618.utils.SessionManager;
 import org.json.JSONArray;
-import org.json.JSONObject;
+import org.json.JSONObject;import android.os.Handler;
+import android.os.Looper;
+import android.view.animation.Animation;
+import android.view.animation.AnimationUtils;
+import android.widget.FrameLayout;
+import android.widget.LinearLayout;
+import android.widget.ImageView;
+
 
 public class WelcomeActivity extends AppCompatActivity {
 
@@ -47,6 +54,23 @@ public class WelcomeActivity extends AppCompatActivity {
 
         Button connectButton = findViewById(R.id.connectButton);
         ProgressBar progressBar = findViewById(R.id.progressBar);
+        LinearLayout introLayout = findViewById(R.id.introLayout);
+        FrameLayout buttonContainer = findViewById(R.id.buttonContainer);
+        ImageView splashLogo = findViewById(R.id.splashLogo);
+
+        Animation fadeIn = AnimationUtils.loadAnimation(this, R.anim.fade_in);
+        introLayout.setVisibility(View.VISIBLE);
+        buttonContainer.setVisibility(View.INVISIBLE);
+
+        splashLogo.startAnimation(fadeIn);
+
+        new Handler(Looper.getMainLooper()).postDelayed(() -> {
+            introLayout.setVisibility(View.VISIBLE);
+            buttonContainer.setVisibility(View.VISIBLE);
+
+            introLayout.startAnimation(fadeIn);
+            buttonContainer.startAnimation(fadeIn);
+        }, 2500);
 
         connectButton.setOnClickListener(v -> {
             progressBar.setVisibility(View.VISIBLE);

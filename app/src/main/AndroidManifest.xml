@@ -11,9 +11,7 @@
         android:roundIcon="@mipmap/ic_launcher_round"
         android:supportsRtl="true"
         android:theme="@style/Theme.UniversityEvents_1221618">
-        <activity
-            android:name=".activities.AuthPagerAdapter"
-            android:exported="false" />
+
         <activity
             android:name=".activities.AuthActivity"
             android:exported="false" />
@@ -21,17 +19,13 @@
             android:name=".activities.HomeActivity"
             android:exported="false" />
         <activity
-            android:name=".activities.WelcomeActivity"
-            android:exported="false" />
-        <activity
             android:name=".activities.AdminHomeActivity"
             android:exported="false" />
         <activity
-            android:name=".MainActivity"
+            android:name=".activities.WelcomeActivity"
             android:exported="true">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
-
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
