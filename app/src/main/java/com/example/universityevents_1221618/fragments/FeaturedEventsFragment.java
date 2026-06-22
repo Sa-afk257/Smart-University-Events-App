@@ -25,7 +25,7 @@ public class FeaturedEventsFragment extends androidx.fragment.app.Fragment {
         DatabaseHelper dbHelper = new DatabaseHelper(getContext());
         recyclerView.setLayoutManager(new LinearLayoutManager(getContext()));
 
-        EventAdapter adapter = new EventAdapter(dbHelper.getEvents(null, null, 0, true), getContext());
+        EventAdapter adapter = new EventAdapter(dbHelper.getEvents("", null, null, 0, true), getContext());
         recyclerView.setAdapter(adapter);
         return view;
     }

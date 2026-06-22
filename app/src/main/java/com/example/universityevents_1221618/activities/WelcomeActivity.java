@@ -15,8 +15,10 @@ import com.example.universityevents_1221618.R;
 import com.example.universityevents_1221618.db.DatabaseHelper;
 import com.example.universityevents_1221618.models.User;
 import com.example.universityevents_1221618.utils.SessionManager;
+import com.example.universityevents_1221618.utils.PasswordUtils;
 import org.json.JSONArray;
-import org.json.JSONObject;import android.os.Handler;
+import org.json.JSONObject;
+import android.os.Handler;
 import android.os.Looper;
 import android.view.animation.Animation;
 import android.view.animation.AnimationUtils;
@@ -108,8 +110,7 @@ public class WelcomeActivity extends AppCompatActivity {
         if (!dbHelper.isEmailExists("admin@admin.com")) {
             User admin = new User();
             admin.setEmail("admin@admin.com");
-            admin.setPassword("Admin123!");
-            admin.setFirstName("Admin");
+            admin.setPassword(PasswordUtils.hashPassword("Admin123!"));            admin.setFirstName("Admin");
             admin.setLastName("User");
             admin.setRole("ADMIN");
             dbHelper.addUser(admin);

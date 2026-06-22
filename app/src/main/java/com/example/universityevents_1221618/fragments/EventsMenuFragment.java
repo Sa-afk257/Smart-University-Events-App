@@ -28,6 +28,7 @@ public class EventsMenuFragment extends Fragment {
     private AutoCompleteTextView categoryAutoComplete;
     private EditText locationEditText, seatsEditText;
     private TextView noEventsText;
+    private EditText searchEditText;
 
     @Nullable
     @Override
@@ -42,6 +43,7 @@ public class EventsMenuFragment extends Fragment {
         locationEditText = view.findViewById(R.id.filter_location);
         seatsEditText = view.findViewById(R.id.filter_seats);
         noEventsText = view.findViewById(R.id.no_events_text);
+        searchEditText = view.findViewById(R.id.filter_search);
         Button filterButton = view.findViewById(R.id.filter_button);
 
         setupCategoryFilter();
@@ -73,8 +75,8 @@ public class EventsMenuFragment extends Fragment {
             minSeats = 0;
         }
 
-        List<Event> eventList = dbHelper.getEvents(category, location, minSeats, false);
-
+        String search = searchEditText.getText().toString().trim();
+        List<Event> eventList = dbHelper.getEvents(search, category, location, minSeats, false);
         if (eventList.isEmpty()) {
             recyclerView.setVisibility(View.GONE);
             noEventsText.setVisibility(View.VISIBLE);

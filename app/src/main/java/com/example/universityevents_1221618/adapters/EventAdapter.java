@@ -17,6 +17,8 @@ import com.example.universityevents_1221618.R;
 import com.example.universityevents_1221618.db.DatabaseHelper;
 import com.example.universityevents_1221618.models.Event;
 import com.example.universityevents_1221618.utils.SessionManager;
+import androidx.fragment.app.FragmentActivity;
+import com.example.universityevents_1221618.fragments.EventDetailsFragment;
 import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.List;
@@ -82,6 +84,15 @@ public class EventAdapter extends RecyclerView.Adapter<EventAdapter.EventViewHol
         });
 
         holder.reserveButton.setOnClickListener(v -> showReservationDialog(event));
+        holder.itemView.setOnClickListener(v -> {
+            if (context instanceof FragmentActivity) {
+                ((FragmentActivity) context).getSupportFragmentManager()
+                        .beginTransaction()
+                        .replace(R.id.fragment_container, EventDetailsFragment.newInstance(event))
+                        .addToBackStack(null)
+                        .commit();
+            }
+        });
     }
 
     private void updateFavoriteIcon(ImageButton button, boolean isFavorite) {
@@ -139,13 +150,15 @@ public class EventAdapter extends RecyclerView.Adapter<EventAdapter.EventViewHol
                     return;
                 }
 
+                int remainingSeats = dbHelper.getRemainingSeats(event.getId());
+
                 if (quantity <= 0) {
-                    quantityInput.setError("Quantity must be greater than 0");
+                    Toast.makeText(context, "Quantity must be greater than 0", Toast.LENGTH_SHORT).show();
                     return;
                 }
 
-                if (quantity > event.getSeats()) {
-                    quantityInput.setError("Quantity cannot exceed available seats");
+                if (quantity > remainingSeats) {
+                    Toast.makeText(context, "Only " + remainingSeats + " seats remaining", Toast.LENGTH_SHORT).show();
                     return;
                 }
 
@@ -165,6 +178,11 @@ public class EventAdapter extends RecyclerView.Adapter<EventAdapter.EventViewHol
 
                 if (inserted) {
                     Toast.makeText(context, "Event reserved successfully", Toast.LENGTH_SHORT).show();
+
+                    int newRemainingSeats = dbHelper.getRemainingSeats(event.getId());
+                    event.setSeats(newRemainingSeats);
+                    notifyDataSetChanged();
+
                     dialog.dismiss();
                 } else {
                     Toast.makeText(context, "Failed to reserve event", Toast.LENGTH_SHORT).show();

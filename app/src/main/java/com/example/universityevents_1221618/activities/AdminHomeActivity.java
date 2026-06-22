@@ -63,6 +63,7 @@ public class AdminHomeActivity extends AppCompatActivity implements NavigationVi
         else if (itemId == R.id.nav_admin_featured) selectedFragment = new ManageFeaturedEventsFragment();
         else if (itemId == R.id.nav_admin_delete_customer) selectedFragment = new DeleteCustomersFragment();
         else if (itemId == R.id.nav_admin_add_admin) selectedFragment = new AddNewAdminFragment();
+        else if (itemId == R.id.nav_admin_manage_events) selectedFragment = new ManageEventsFragment();
         else if (itemId == R.id.nav_admin_logout) {
             logout();
             return true;

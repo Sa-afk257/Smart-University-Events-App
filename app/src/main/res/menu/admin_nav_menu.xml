@@ -16,6 +16,11 @@
             android:id="@+id/nav_admin_featured"
             android:icon="@drawable/ic_featured"
             android:title="Manage Featured events" />
+
+        <item
+            android:id="@+id/nav_admin_manage_events"
+            android:icon="@drawable/ic_event"
+            android:title="Manage Events" />
     </group>
 
     <item android:title="User Management">

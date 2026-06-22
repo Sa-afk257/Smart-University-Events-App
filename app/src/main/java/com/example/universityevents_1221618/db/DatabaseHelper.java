@@ -19,7 +19,7 @@ import java.util.Map;
 
 public class DatabaseHelper extends SQLiteOpenHelper {
     private static final String DATABASE_NAME = "UniversityEvents.db";
-    private static final int DATABASE_VERSION = 3;
+    private static final int DATABASE_VERSION = 4;
 
     private static final String TABLE_USERS = "users";
     private static final String TABLE_EVENTS = "events";
@@ -93,6 +93,17 @@ public class DatabaseHelper extends SQLiteOpenHelper {
         db.execSQL(CREATE_TABLE_EVENTS);
         db.execSQL(CREATE_TABLE_FAVORITES);
         db.execSQL(CREATE_TABLE_RESERVATIONS);
+
+        ContentValues admin = new ContentValues();
+        admin.put(KEY_EMAIL, "admin@admin.com");
+        admin.put(KEY_FIRST_NAME, "Admin");
+        admin.put(KEY_LAST_NAME, "User");
+        admin.put(KEY_PASSWORD, PasswordUtils.hashPassword("Admin123!"));
+        admin.put(KEY_GENDER, "Other");
+        admin.put(KEY_MAJOR, "Administration");
+        admin.put(KEY_PHONE, "0590000000");
+        admin.put(KEY_ROLE, "ADMIN");
+        db.insert(TABLE_USERS, null, admin);
     }
 
     @Override
@@ -185,7 +196,6 @@ public class DatabaseHelper extends SQLiteOpenHelper {
         db.beginTransaction();
 
         try {
-            db.delete(TABLE_EVENTS, null, null);
 
             for (int i = 0; i < eventsArray.length(); i++) {
                 JSONObject event = eventsArray.getJSONObject(i);
@@ -203,7 +213,12 @@ public class DatabaseHelper extends SQLiteOpenHelper {
 
                 values.put(KEY_IS_FEATURED, (i < 3) ? 1 : 0);
 
-                db.insert(TABLE_EVENTS, null, values);
+                db.insertWithOnConflict(
+                        TABLE_EVENTS,
+                        null,
+                        values,
+                        SQLiteDatabase.CONFLICT_REPLACE
+                );
             }
 
             db.setTransactionSuccessful();
@@ -216,12 +231,19 @@ public class DatabaseHelper extends SQLiteOpenHelper {
         }
     }
 
-    public List<Event> getEvents(String categoryFilter, String locationFilter, int minSeats, boolean featuredOnly) {
+    public List<Event> getEvents(String searchText, String categoryFilter, String locationFilter, int minSeats, boolean featuredOnly){
         List<Event> eventList = new ArrayList<>();
         SQLiteDatabase db = this.getReadableDatabase();
 
         String selection = featuredOnly ? KEY_IS_FEATURED + " = 1" : null;
         List<String> selectionArgs = new ArrayList<>();
+
+        if (searchText != null && !searchText.isEmpty()) {
+            if (selection == null) selection = ""; else selection += " AND ";
+            selection += "(" + KEY_TITLE + " LIKE ? OR " + KEY_DESCRIPTION + " LIKE ?)";
+            selectionArgs.add("%" + searchText + "%");
+            selectionArgs.add("%" + searchText + "%");
+        }
 
         if (categoryFilter != null && !categoryFilter.isEmpty() && !categoryFilter.equals("All")) {
             if (selection == null) selection = ""; else selection += " AND ";
@@ -268,11 +290,15 @@ public class DatabaseHelper extends SQLiteOpenHelper {
         return eventList;
     }
 
-    public void addFavorite(int userId, int EventId) {
+    public void addFavorite(int userId, int eventId) {
+        if (isFavorite(userId, eventId)) {
+            return;
+        }
+
         SQLiteDatabase db = this.getWritableDatabase();
         ContentValues values = new ContentValues();
         values.put(KEY_USER_ID, userId);
-        values.put(KEY_EVENT_ID, EventId);
+        values.put(KEY_EVENT_ID, eventId);
         db.insert(TABLE_FAVORITES, null, values);
         db.close();
     }
@@ -337,7 +363,15 @@ public class DatabaseHelper extends SQLiteOpenHelper {
     public List<Reservation> getReservations(int userId) {
         List<Reservation> reservationList = new ArrayList<>();
         SQLiteDatabase db = this.getReadableDatabase();
-        String query = "SELECT r." + KEY_ID + " as reservation_id, r." + KEY_RESERVATION_DATE + ", p.* FROM " + TABLE_RESERVATIONS + " r INNER JOIN " + TABLE_EVENTS + " p ON r." + KEY_EVENT_ID + " = p." + KEY_ID + " WHERE r." + KEY_USER_ID + " = ?";
+        String query =
+                "SELECT r." + KEY_ID + " AS reservation_id, " +
+                        "r." + KEY_RESERVATION_DATE + ", " +
+                        "r." + KEY_RESERVATION_QUANTITY + ", " +
+                        "r." + KEY_RESERVATION_TYPE + ", " +
+                        "r." + KEY_RESERVATION_STATUS + ", " +
+                        "p.* FROM " + TABLE_RESERVATIONS + " r " +
+                        "INNER JOIN " + TABLE_EVENTS + " p ON r." + KEY_EVENT_ID + " = p." + KEY_ID +
+                        " WHERE r." + KEY_USER_ID + " = ?";
         Cursor cursor = db.rawQuery(query, new String[]{String.valueOf(userId)});
         if (cursor.moveToFirst()) {
             do {
@@ -498,5 +532,110 @@ public class DatabaseHelper extends SQLiteOpenHelper {
         cursor.close();
         db.close();
         return list;
+    }
+
+    public boolean addEvent(Event event) {
+        SQLiteDatabase db = this.getWritableDatabase();
+
+        ContentValues values = new ContentValues();
+        values.put(KEY_ID, event.getId());
+        values.put(KEY_TITLE, event.getTitle());
+        values.put(KEY_DESCRIPTION, event.getDescription());
+        values.put(KEY_CATEGORY, event.getCategory());
+        values.put(KEY_DATE, event.getDate());
+        values.put(KEY_TIME, event.getTime());
+        values.put(KEY_LOCATION, event.getLocation());
+        values.put(KEY_SEATS, event.getSeats());
+        values.put(KEY_IMAGE_URL, event.getImageUrl());
+
+        long result = db.insert(TABLE_EVENTS, null, values);
+        db.close();
+
+        return result != -1;
+    }
+
+    public boolean updateEvent(Event event) {
+        SQLiteDatabase db = this.getWritableDatabase();
+
+        ContentValues values = new ContentValues();
+        values.put(KEY_TITLE, event.getTitle());
+        values.put(KEY_DESCRIPTION, event.getDescription());
+        values.put(KEY_CATEGORY, event.getCategory());
+        values.put(KEY_DATE, event.getDate());
+        values.put(KEY_TIME, event.getTime());
+        values.put(KEY_LOCATION, event.getLocation());
+        values.put(KEY_SEATS, event.getSeats());
+        values.put(KEY_IMAGE_URL, event.getImageUrl());
+
+        int rows = db.update(
+                TABLE_EVENTS,
+                values,
+                KEY_ID + "=?",
+                new String[]{String.valueOf(event.getId())}
+        );
+
+        db.close();
+        return rows > 0;
+    }
+
+    public boolean deleteEvent(int eventId) {
+        SQLiteDatabase db = this.getWritableDatabase();
+
+        try {
+            db.beginTransaction();
+
+            db.delete(TABLE_FAVORITES,
+                    KEY_EVENT_ID + "=?",
+                    new String[]{String.valueOf(eventId)});
+
+            db.delete(TABLE_RESERVATIONS,
+                    KEY_EVENT_ID + "=?",
+                    new String[]{String.valueOf(eventId)});
+
+            int rows = db.delete(TABLE_EVENTS,
+                    KEY_ID + "=?",
+                    new String[]{String.valueOf(eventId)});
+
+            db.setTransactionSuccessful();
+
+            return rows > 0;
+
+        } catch (Exception e) {
+            e.printStackTrace();
+            return false;
+
+        } finally {
+            db.endTransaction();
+            db.close();
+        }
+    }
+    public int getRemainingSeats(int eventId) {
+        SQLiteDatabase db = this.getReadableDatabase();
+
+        int totalSeats = 0;
+        Cursor eventCursor = db.rawQuery(
+                "SELECT " + KEY_SEATS + " FROM " + TABLE_EVENTS + " WHERE " + KEY_ID + "=?",
+                new String[]{String.valueOf(eventId)}
+        );
+
+        if (eventCursor.moveToFirst()) {
+            totalSeats = eventCursor.getInt(0);
+        }
+        eventCursor.close();
+
+        int reservedSeats = 0;
+        Cursor reservationCursor = db.rawQuery(
+                "SELECT IFNULL(SUM(" + KEY_RESERVATION_QUANTITY + "), 0) FROM " + TABLE_RESERVATIONS +
+                        " WHERE " + KEY_EVENT_ID + "=?",
+                new String[]{String.valueOf(eventId)}
+        );
+
+        if (reservationCursor.moveToFirst()) {
+            reservedSeats = reservationCursor.getInt(0);
+        }
+        reservationCursor.close();
+        db.close();
+
+        return totalSeats - reservedSeats;
     }
 }
